@@ -839,6 +839,9 @@ function showAddRuleModal(type) {
                 <label>Response Headers (optional, one per line)</label>
                 <textarea name="headers" rows="3" placeholder="Access-Control-Allow-Origin: *"></textarea>
             </div>
+            <div class="form-group">
+                <label><input type="checkbox" name="expose_debug_header" checked> Expose x-rustyman-map-local header</label>
+            </div>
         `;
     } else if (type === 'header') {
         formContent.innerHTML = `
@@ -904,6 +907,7 @@ async function submitRule(event) {
             pattern: formData.get('pattern'),
             local_path: formData.get('local_path'),
             mime_type: formData.get('mime_type') || null,
+            expose_debug_header: formData.get('expose_debug_header') === 'on',
             headers: Object.fromEntries(
                 (formData.get('headers') || '').split('\n')
                     .map(line => line.trim())

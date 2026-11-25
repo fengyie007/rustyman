@@ -184,6 +184,9 @@ pub struct MapLocalRule {
     /// Extra response headers, e.g. CORS (optional)
     #[serde(default)]
     pub headers: HashMap<String, String>,
+    /// Emit the x-rustyman-map-local debug response header
+    #[serde(default = "default_true")]
+    pub expose_debug_header: bool,
 }
 
 /// Header rewrite rule

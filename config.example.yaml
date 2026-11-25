@@ -60,6 +60,8 @@ map_local:
       Access-Control-Allow-Origin: "*"
       Access-Control-Allow-Methods: "GET, POST, OPTIONS"
       Access-Control-Allow-Headers: "Content-Type, Authorization"
+    # Emit the x-rustyman-map-local debug header (default true)
+    expose_debug_header: true
 
   # Example: Serve entire directory
   - name: "local-static-assets"

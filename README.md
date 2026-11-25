@@ -236,6 +236,17 @@ Browser preflight `OPTIONS` requests match Map Local rules too (the rules do not
 filter on method), so `Access-Control-Allow-Methods` must list the methods your
 page actually uses.
 
+Mocked responses carry an `x-rustyman-map-local` debug header. Disable it per
+rule with `expose_debug_header: false`:
+
+```yaml
+map_local:
+  - name: "mock-users"
+    pattern: "https://api\\.example\\.com/users"
+    local_path: "/mocks/users.json"
+    expose_debug_header: false
+```
+
 Rules added through the Web UI or REST API live in memory only — they are not
 written back to `config.yaml` and are lost on restart. Persist them in the file
 if you need them to survive.

@@ -342,9 +342,10 @@ impl ProxyHandler {
                     state.traffic.set_response(&entry_id, response_info);
                     state.traffic.mark_complete(&entry_id);
 
-                    let mut builder = Response::builder()
-                        .status(200)
-                        .header("x-rustyman-map-local", &map_local_match.local_path);
+                    let mut builder = Response::builder().status(200);
+                    if map_local_match.expose_debug_header {
+                        builder = builder.header("x-rustyman-map-local", &map_local_match.local_path);
+                    }
                     for (key, value) in &resp_headers {
                         builder = builder.header(key, value);
                     }

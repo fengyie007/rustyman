@@ -42,6 +42,7 @@ impl MapLocalHandler {
                     local_path,
                     mime_type: compiled.rule.mime_type.clone(),
                     headers: compiled.rule.headers.clone(),
+                    expose_debug_header: compiled.rule.expose_debug_header,
                 });
             }
         }
@@ -113,6 +114,7 @@ pub struct MapLocalMatch {
     pub local_path: String,
     pub mime_type: Option<String>,
     pub headers: HashMap<String, String>,
+    pub expose_debug_header: bool,
 }
 
 /// Content read from local file
@@ -138,6 +140,7 @@ mod tests {
             local_path: "/var/www/static/$1".to_string(),
             mime_type: None,
             headers: HashMap::new(),
+            expose_debug_header: true,
         }];
 
         let handler = MapLocalHandler::new(rules).unwrap();
@@ -162,6 +165,7 @@ mod tests {
             local_path: test_file.to_string_lossy().to_string(),
             mime_type: None,
             headers: HashMap::new(),
+            expose_debug_header: true,
         }];
 
         let handler = MapLocalHandler::new(rules).unwrap();
@@ -180,6 +184,7 @@ mod tests {
             local_path: "/tmp/test".to_string(),
             mime_type: None,
             headers: HashMap::new(),
+            expose_debug_header: true,
         }];
 
         let handler = MapLocalHandler::new(rules).unwrap();
@@ -203,6 +208,7 @@ mod tests {
             local_path: "/mocks/data.json".to_string(),
             mime_type: None,
             headers,
+            expose_debug_header: true,
         }];
 
         let handler = MapLocalHandler::new(rules).unwrap();
