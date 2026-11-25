@@ -46,6 +46,10 @@ impl Drop for ProxyFixture {
 }
 
 async fn start_proxy() -> ProxyFixture {
+    start_proxy_with(|_| {}).await
+}
+
+async fn start_proxy_with(configure: impl FnOnce(&mut Config)) -> ProxyFixture {
     let proxy_port = get_free_port();
     let temp_dir = tempfile::TempDir::new().unwrap();
 
@@ -61,6 +65,7 @@ async fn start_proxy() -> ProxyFixture {
     let mut config = Config::default();
     config.proxy.port = proxy_port;
     config.proxy.mitm_enabled = true;
+    configure(&mut config);
 
     let cancel = CancellationToken::new();
     let server = ProxyServer::new(config, ca, cancel.clone()).unwrap();
@@ -255,4 +260,57 @@ async fn test_websocket_proxy() {
         "Expected >= 4 recorded WS messages, got {}",
         messages.len()
     );
+}
+
+/// Test that a Map Local rule can attach custom response headers (e.g. CORS).
+#[tokio::test]
+async fn test_map_local_custom_headers() {
+    let mock_dir = tempfile::TempDir::new().unwrap();
+    let mock_file = mock_dir.path().join("data.json");
+    std::fs::write(&mock_file, r#"{"ok":true}"#).unwrap();
+
+    let local_path = mock_file.to_string_lossy().to_string();
+    let fixture = start_proxy_with(|config| {
+        config.map_local = vec![rustyman::config::MapLocalRule {
+            name: "cors-mock".to_string(),
+            enabled: true,
+            pattern: r"http://mocked\.test/api/.*".to_string(),
+            local_path,
+            mime_type: Some("application/json".to_string()),
+            headers: std::collections::HashMap::from([(
+                "access-control-allow-origin".to_string(),
+                "*".to_string(),
+            )]),
+        }];
+    })
+    .await;
+
+    let stream = TcpStream::connect(fixture.addr).await.unwrap();
+    let io = TokioIo::new(stream);
+    let (mut sender, conn) = ClientBuilder::new().handshake(io).await.unwrap();
+    tokio::spawn(conn);
+
+    let req = Request::get("http://mocked.test/api/data")
+        .header("host", "mocked.test")
+        .body(Full::new(Bytes::new()))
+        .unwrap();
+
+    let resp = sender.send_request(req).await.unwrap();
+
+    assert_eq!(resp.status(), StatusCode::OK);
+    assert_eq!(
+        resp.headers()
+            .get("access-control-allow-origin")
+            .and_then(|v| v.to_str().ok()),
+        Some("*")
+    );
+    assert_eq!(
+        resp.headers()
+            .get("content-type")
+            .and_then(|v| v.to_str().ok()),
+        Some("application/json")
+    );
+
+    let body = resp.into_body().collect().await.unwrap().to_bytes();
+    assert_eq!(body, r#"{"ok":true}"#);
 }

@@ -1,6 +1,7 @@
 use super::{CompiledRule, RuleError};
 use crate::config::MapLocalRule;
 use regex::Regex;
+use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 use tracing::debug;
@@ -40,6 +41,7 @@ impl MapLocalHandler {
                     original_url: url.to_string(),
                     local_path,
                     mime_type: compiled.rule.mime_type.clone(),
+                    headers: compiled.rule.headers.clone(),
                 });
             }
         }
@@ -110,6 +112,7 @@ pub struct MapLocalMatch {
     pub original_url: String,
     pub local_path: String,
     pub mime_type: Option<String>,
+    pub headers: HashMap<String, String>,
 }
 
 /// Content read from local file
@@ -134,6 +137,7 @@ mod tests {
             pattern: r"https://example\.com/static/(.*)".to_string(),
             local_path: "/var/www/static/$1".to_string(),
             mime_type: None,
+            headers: HashMap::new(),
         }];
 
         let handler = MapLocalHandler::new(rules).unwrap();
@@ -157,6 +161,7 @@ mod tests {
             pattern: r".*".to_string(),
             local_path: test_file.to_string_lossy().to_string(),
             mime_type: None,
+            headers: HashMap::new(),
         }];
 
         let handler = MapLocalHandler::new(rules).unwrap();
@@ -174,11 +179,40 @@ mod tests {
             pattern: r".*".to_string(),
             local_path: "/tmp/test".to_string(),
             mime_type: None,
+            headers: HashMap::new(),
         }];
 
         let handler = MapLocalHandler::new(rules).unwrap();
         let result = handler.match_url("https://any.url.com/path");
 
         assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_headers_passed_through() {
+        let mut headers = HashMap::new();
+        headers.insert(
+            "access-control-allow-origin".to_string(),
+            "*".to_string(),
+        );
+
+        let rules = vec![MapLocalRule {
+            name: "cors".to_string(),
+            enabled: true,
+            pattern: r"https://example\.com/api/.*".to_string(),
+            local_path: "/mocks/data.json".to_string(),
+            mime_type: None,
+            headers,
+        }];
+
+        let handler = MapLocalHandler::new(rules).unwrap();
+        let matched = handler
+            .match_url("https://example.com/api/data")
+            .expect("rule should match");
+
+        assert_eq!(
+            matched.headers.get("access-control-allow-origin"),
+            Some(&"*".to_string())
+        );
     }
 }

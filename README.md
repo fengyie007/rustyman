@@ -214,6 +214,32 @@ map_local:
     local_path: "/local/assets/$1"
 ```
 
+### Custom response headers (CORS)
+
+Map Local responses can carry extra headers via `headers`. Keys are matched
+case-insensitively by HTTP; values override the defaults (`content-type` and
+`x-rustyman-map-local`):
+
+```yaml
+map_local:
+  - name: "mock-users"
+    pattern: "https://api\\.example\\.com/users"
+    local_path: "/mocks/users.json"
+    mime_type: "application/json"
+    headers:
+      Access-Control-Allow-Origin: "*"
+      Access-Control-Allow-Methods: "GET, POST, OPTIONS"
+      Access-Control-Allow-Headers: "Content-Type, Authorization"
+```
+
+Browser preflight `OPTIONS` requests match Map Local rules too (the rules do not
+filter on method), so `Access-Control-Allow-Methods` must list the methods your
+page actually uses.
+
+Rules added through the Web UI or REST API live in memory only — they are not
+written back to `config.yaml` and are lost on restart. Persist them in the file
+if you need them to survive.
+
 ## Header Rewrite
 
 Modify HTTP headers with regex support:

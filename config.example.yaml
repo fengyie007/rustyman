@@ -50,12 +50,16 @@ map_remote:
 
 # Map Local rules - serve local files for matching requests
 map_local:
-  # Example: Serve local mock response
+  # Example: Serve local mock response with CORS headers
   - name: "mock-users-api"
     enabled: true
     pattern: "https://api\\.example\\.com/users"
     local_path: "/path/to/mock/users.json"
     mime_type: "application/json"
+    headers:
+      Access-Control-Allow-Origin: "*"
+      Access-Control-Allow-Methods: "GET, POST, OPTIONS"
+      Access-Control-Allow-Headers: "Content-Type, Authorization"
 
   # Example: Serve entire directory
   - name: "local-static-assets"

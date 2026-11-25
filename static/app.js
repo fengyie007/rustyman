@@ -835,6 +835,10 @@ function showAddRuleModal(type) {
                 <label>MIME Type (optional)</label>
                 <input type="text" name="mime_type" placeholder="application/json">
             </div>
+            <div class="form-group">
+                <label>Response Headers (optional, one per line)</label>
+                <textarea name="headers" rows="3" placeholder="Access-Control-Allow-Origin: *"></textarea>
+            </div>
         `;
     } else if (type === 'header') {
         formContent.innerHTML = `
@@ -899,7 +903,17 @@ async function submitRule(event) {
             enabled: true,
             pattern: formData.get('pattern'),
             local_path: formData.get('local_path'),
-            mime_type: formData.get('mime_type') || null
+            mime_type: formData.get('mime_type') || null,
+            headers: Object.fromEntries(
+                (formData.get('headers') || '').split('\n')
+                    .map(line => line.trim())
+                    .filter(Boolean)
+                    .map(line => {
+                        const i = line.indexOf(':');
+                        return i < 0 ? null : [line.slice(0, i).trim(), line.slice(i + 1).trim()];
+                    })
+                    .filter(Boolean)
+            )
         };
     } else if (currentRuleType === 'header') {
         endpoint = '/api/rules/header';

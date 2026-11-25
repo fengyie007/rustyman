@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::path::Path;
 use thiserror::Error;
 
@@ -180,6 +181,9 @@ pub struct MapLocalRule {
     pub local_path: String,
     /// MIME type override (optional)
     pub mime_type: Option<String>,
+    /// Extra response headers, e.g. CORS (optional)
+    #[serde(default)]
+    pub headers: HashMap<String, String>,
 }
 
 /// Header rewrite rule

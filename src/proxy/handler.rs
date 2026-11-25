@@ -321,11 +321,18 @@ impl ProxyHandler {
                         full_url, map_local_match.local_path, mime_type
                     );
 
+                    // Rule headers override the defaults
+                    let mut resp_headers = HashMap::from([(
+                        "content-type".to_string(),
+                        mime_type.clone(),
+                    )]);
+                    resp_headers.extend(map_local_match.headers.clone());
+
                     let response_info = ResponseInfo {
                         status: 200,
                         reason: "OK".to_string(),
                         http_version: "HTTP/1.1".to_string(),
-                        headers: HashMap::from([("content-type".to_string(), mime_type.clone())]),
+                        headers: resp_headers.clone(),
                         body: Some(content.content.clone()),
                         body_size: content.content.len(),
                         modified: true,
@@ -335,12 +342,14 @@ impl ProxyHandler {
                     state.traffic.set_response(&entry_id, response_info);
                     state.traffic.mark_complete(&entry_id);
 
-                    return Ok(Response::builder()
+                    let mut builder = Response::builder()
                         .status(200)
-                        .header("content-type", mime_type)
-                        .header("x-rustyman-map-local", &map_local_match.local_path)
-                        .body(Full::new(Bytes::from(content.content)))
-                        .unwrap());
+                        .header("x-rustyman-map-local", &map_local_match.local_path);
+                    for (key, value) in &resp_headers {
+                        builder = builder.header(key, value);
+                    }
+
+                    return Ok(builder.body(Full::new(Bytes::from(content.content))).unwrap());
                 }
                 Ok(_) => {
                     warn!("Map Local file not found: {}", map_local_match.local_path);
